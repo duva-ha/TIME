@@ -3,172 +3,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Giviso Timeline - Kéo Rê Linh Hoạt</title>
+    <title>MegaDoc Pro - Hệ thống Quản lý Tài liệu</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
-        body { font-family: 'Inter', sans-serif; background: #f8fafc; overflow: hidden; user-select: none; }
-        
-        /* Trục chính */
-        .timeline-line { 
-            height: 6px; 
-            background: linear-gradient(90deg, #3b82f6, #8b5cf6); 
-            position: absolute; 
-            top: 50%; left: 0; right: 0; 
-            transform: translateY(-50%); 
-            z-index: 5;
-            border-radius: 10px;
-        }
-
-        /* Sợi dây kết nối */
-        .connector-line {
-            width: 2px;
-            background: #cbd5e1;
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1;
-        }
-
-        /* Thẻ sự kiện có thể kéo rê */
-        .event-wrapper {
-            position: absolute;
-            cursor: grab;
-            z-index: 10;
-            transition: transform 0.1s ease;
-        }
-        .event-wrapper:active { cursor: grabbing; z-index: 100; }
-
-        .node-dot {
-            width: 16px;
-            height: 16px;
-            background: white;
-            border: 4px solid #3b82f6;
-            border-radius: 50%;
-            position: absolute;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 20;
-        }
-
-        .glass-dock { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(15px); border: 1px solid rgba(0,0,0,0.1); }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+        .sidebar-btn.active { background-color: #f1f5f9; color: #2563eb; font-weight: 700; border-right: 4px solid #2563eb; }
+        .file-card { transition: all 0.3s ease; border: 1px solid #f1f5f9; }
+        .file-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
     </style>
 </head>
-<body class="h-screen flex flex-col">
+<body class="text-slate-800">
 
-    <header class="p-4 bg-white border-b flex justify-between items-center shadow-sm">
-        <h1 class="text-xl font-bold text-blue-600 tracking-tight">GIVISO <span class="font-light text-gray-400">| Pro Timeline</span></h1>
-        <div class="text-xs font-bold text-gray-500 bg-gray-100 px-4 py-2 rounded-lg">MẸO: NHẤN GIỮ ĐỂ KÉO RÊ SỰ KIỆN</div>
-    </header>
-
-    <main class="flex-1 relative overflow-x-auto p-20" id="container">
-        <div class="min-w-[5000px] h-full relative" id="timeline-area">
-            <div class="timeline-line"></div>
-
-            <div class="event-wrapper" style="left: 300px; top: 150px;" onmousedown="startDrag(event, this)">
-                <div class="event-card bg-white p-3 rounded-xl shadow-xl border w-48 relative z-30">
-                    <p class="text-[10px] font-bold text-blue-600 uppercase">Họp đầu năm</p>
-                    <p class="text-xs text-gray-700">Thảo luận kế hoạch lớp 10A7</p>
-                </div>
-                <div class="connector-line" style="top: 100%; height: calc(50vh - 150px - 50%);"></div>
-                <div class="node-dot" style="top: calc(50vh - 150px - 50%);"></div>
+    <div class="flex h-screen overflow-hidden">
+        <aside class="w-64 bg-white border-r flex flex-col">
+            <div class="p-6 flex items-center space-x-3 mb-4">
+                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg"><i class="fas fa-database"></i></div>
+                <span class="text-xl font-bold tracking-tighter">MEGA DOC</span>
             </div>
-        </div>
-    </main>
 
-    <button onclick="addNewEvent()" class="fixed bottom-24 right-8 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-2xl hover:scale-110 transition flex items-center justify-center z-50">
-        <i class="fa-solid fa-plus text-xl"></i>
-    </button>
+            <nav class="flex-1 px-4 space-y-1">
+                <p class="text-[10px] font-bold text-slate-400 uppercase px-3 mb-2 tracking-widest text-center">Phân loại file</p>
+                <button onclick="changeCategory('all', this)" class="sidebar-btn active w-full flex items-center p-3 rounded-lg transition text-slate-600">
+                    <i class="fas fa-layer-group mr-3 w-5"></i> Tất cả file
+                </button>
+                <button onclick="changeCategory('pdf', this)" class="sidebar-btn w-full flex items-center p-3 rounded-lg transition text-slate-600">
+                    <i class="fas fa-file-pdf mr-3 w-5 text-red-500"></i> PDF
+                </button>
+                <button onclick="changeCategory('xlsx', this)" class="sidebar-btn w-full flex items-center p-3 rounded-lg transition text-slate-600">
+                    <i class="fas fa-file-excel mr-3 w-5 text-green-600"></i> Excel
+                </button>
+                <button onclick="changeCategory('docx', this)" class="sidebar-btn w-full flex items-center p-3 rounded-lg transition text-slate-600">
+                    <i class="fas fa-file-word mr-3 w-5 text-blue-500"></i> Word
+                </button>
+                <button onclick="changeCategory('pptx', this)" class="sidebar-btn w-full flex items-center p-3 rounded-lg transition text-slate-600">
+                    <i class="fas fa-file-powerpoint mr-3 w-5 text-orange-500"></i> PowerPoint
+                </button>
+                <button onclick="changeCategory('mp3', this)" class="sidebar-btn w-full flex items-center p-3 rounded-lg transition text-slate-600">
+                    <i class="fas fa-file-audio mr-3 w-5 text-purple-500"></i> MP3 / Âm thanh
+                </button>
+                <button onclick="changeCategory('other', this)" class="sidebar-btn w-full flex items-center p-3 rounded-lg transition text-slate-600">
+                    <i class="fas fa-folder-open mr-3 w-5 text-slate-400"></i> Loại khác
+                </button>
+            </nav>
+        </aside>
 
-    <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 flex gap-8 px-10 py-3 rounded-2xl glass-dock z-50 shadow-2xl">
-        <button class="flex flex-col items-center text-gray-400 hover:text-blue-600"><i class="fa-solid fa-layer-group"></i><span class="text-[9px] font-bold mt-1">QUY ĐỊNH</span></button>
-        <button class="flex flex-col items-center text-gray-400 hover:text-blue-600"><i class="fa-solid fa-user-graduate"></i><span class="text-[9px] font-bold mt-1">LỚP 10A7</span></button>
-        <button class="flex flex-col items-center text-gray-400 hover:text-blue-600"><i class="fa-solid fa-calendar-check"></i><span class="text-[9px] font-bold mt-1">TRỰC NHẬT</span></button>
-    </nav>
-
-    <script>
-        let isDragging = false;
-        let currentElement = null;
-        let offset = { x: 0, y: 0 };
-
-        function startDrag(e, el) {
-            isDragging = true;
-            currentElement = el;
-            const rect = el.getBoundingClientRect();
-            offset.x = e.clientX - rect.left;
-            offset.y = e.clientY - rect.top;
-            el.style.transition = 'none';
-        }
-
-        document.addEventListener('mousemove', (e) => {
-            if (!isDragging || !currentElement) return;
-
-            const container = document.getElementById('container');
-            const containerRect = container.getBoundingClientRect();
-
-            // Tính toán vị trí mới
-            let x = e.clientX - containerRect.left - offset.x + container.scrollLeft;
-            let y = e.clientY - containerRect.top - offset.y;
-
-            // Cập nhật vị trí thẻ
-            currentElement.style.left = `${x}px`;
-            currentElement.style.top = `${y}px`;
-
-            // Cập nhật Line kết nối và Nút tròn
-            updateConnector(currentElement, y);
-        });
-
-        document.addEventListener('mouseup', () => {
-            if (currentElement) currentElement.style.transition = 'all 0.1s ease';
-            isDragging = false;
-            currentElement = null;
-        });
-
-        function updateConnector(el, currentY) {
-            const connector = el.querySelector('.connector-line');
-            const dot = el.querySelector('.node-dot');
-            const timelineCenterY = window.innerHeight / 2 - 80; // Trục giữa màn hình
-
-            const distance = timelineCenterY - currentY;
-
-            if (distance > 0) { // Thẻ nằm trên trục
-                connector.style.top = '100%';
-                connector.style.bottom = 'auto';
-                connector.style.height = `${distance}px`;
-                dot.style.top = `${distance + 40}px`; 
-            } else { // Thẻ nằm dưới trục
-                connector.style.top = 'auto';
-                connector.style.bottom = '100%';
-                connector.style.height = `${Math.abs(distance)}px`;
-                dot.style.top = `-${Math.abs(distance)}px`;
-            }
-        }
-
-        function addNewEvent() {
-            const area = document.getElementById('timeline-area');
-            const id = Date.now();
-            const newEvent = document.createElement('div');
-            newEvent.className = 'event-wrapper';
-            newEvent.style.left = (document.getElementById('container').scrollLeft + 100) + 'px';
-            newEvent.style.top = '150px';
-            newEvent.onmousedown = (e) => startDrag(e, newEvent);
-
-            newEvent.innerHTML = `
-                <div class="event-card bg-white p-3 rounded-xl shadow-xl border border-indigo-100 w-48 relative z-30">
-                    <div class="flex justify-between items-start mb-1">
-                        <span class="text-[9px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">MỚI</span>
-                        <button onclick="this.closest('.event-wrapper').remove()" class="text-gray-300 hover:text-red-500 text-xs"><i class="fa-solid fa-xmark"></i></button>
+        <main class="flex-1 flex flex-col bg-slate-50/50">
+            <header class="h-20 bg-white border-b flex items-center justify-between px-6 shadow-sm">
+                <div class="flex items-center space-x-3 flex-1 max-w-4xl">
+                    <div class="relative flex-1">
+                        <i class="fas fa-tag absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="inputName" placeholder="Tên file (VD: Giao_an.pdf)" 
+                               class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition text-sm">
                     </div>
-                    <p class="text-xs font-bold text-gray-800">Sự kiện mới...</p>
-                    <p class="text-[10px] text-gray-500">Kéo để chỉnh ngày</p>
+                    <div class="relative flex-[2]">
+                        <i class="fab fa-google-drive absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="inputUrl" placeholder="Dán link Google Drive vào đây..." 
+                               class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition text-sm">
+                    </div>
+                    <button id="saveBtn" onclick="handleSave()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl font-bold flex items-center shadow-md transition whitespace-nowrap">
+                        <i class="fas fa-plus mr-2"></i> Thêm Link
+                    </button>
                 </div>
-                <div class="connector-line" style="top: 100%; height: 110px;"></div>
-                <div class="node-dot" style="top: 150px;"></div>
-            `;
-            area.appendChild(newEvent);
-            updateConnector(newEvent, 150);
-        }
+            </header>
+
+            <div id="fileGrid" class="flex-1 overflow-y-auto p-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 text-center">
+                </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBTdEZpcTQ1ohSGGNcJg-gkEfVPgdZ9FVg",
+            authDomain: "mega-2a7b2c.firebaseapp.com",
+            projectId: "mega-2a7b2c",
+            storageBucket: "mega-2a7b2c.firebasestorage.app",
+            messagingSenderId: "344986191358",
+            appId: "1:344986191358:web:91946739efe40b97df2caf"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        let allDocs = [];
+
+        const detectType = (name) => {
+            const ext = name.split('.').pop().toLowerCase();
+            if (['doc', 'docx'].includes(ext)) return 'docx';
+            if (['xls', 'xlsx'].includes(ext)) return 'xlsx';
+            if (ext === 'pdf') return 'pdf';
+            if (['ppt', 'pptx'].includes(ext)) return 'pptx';
+            if (ext === 'mp3') return 'mp3';
+            return 'other';
+        };
+
+        window.handleSave = async () => {
+            const nameInput = document.getElementById('inputName');
+            const urlInput = document.getElementById('inputUrl');
+            const btn = document.getElementById('saveBtn');
+
+            if(!nameInput.value || !urlInput.value) return alert("Thầy điền thiếu thông tin rồi!");
+
+            try {
+                btn.innerText = "Đang lưu...";
+                btn.disabled = true;
+
+                await addDoc(collection(db, "mega_docs"), {
+                    name: nameInput.value,
+                    url: urlInput.value,
+                    type: detectType(nameInput.value),
+                    time: new Date().getTime()
+                });
+
+                nameInput.value = '';
+                urlInput.value = '';
+                btn.innerHTML = '<i class="fas fa-plus mr-2"></i> Thêm Link';
+                btn.disabled = false;
+                fetchDocs();
+            } catch (e) {
+                alert("Lỗi: Kiểm tra Rules trong dự án mega-2a7b2c!");
+                btn.disabled = false;
+            }
+        };
+
+        window.fetchDocs = async () => {
+            const q = query(collection(db, "mega_docs"), orderBy("time", "desc"));
+            const snap = await getDocs(q);
+            allDocs = snap.docs.map(d => ({id: d.id, ...d.data()}));
+            render(allDocs);
+        };
+
+        window.deleteDoc = async (id) => {
+            if(confirm("Xóa tài liệu này?")) {
+                await deleteDoc(doc(db, "mega_docs", id));
+                fetchDocs();
+            }
+        };
+
+        window.render = (data) => {
+            const grid = document.getElementById('fileGrid');
+            const icons = { pdf: 'fa-file-pdf text-red-500', xlsx: 'fa-file-excel text-green-600', docx: 'fa-file-word text-blue-500', pptx: 'fa-file-powerpoint text-orange-500', mp3: 'fa-file-audio text-purple-500', other: 'fa-file-alt text-slate-400' };
+            
+            if (data.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-slate-400 mt-20 italic">Chưa có dữ liệu nào ở mục này.</div>';
+                return;
+            }
+
+            grid.innerHTML = data.map(f => `
+                <div class="file-card bg-white p-6 rounded-3xl relative group">
+                    <button onclick="deleteDoc('${f.id}')" class="absolute top-4 right-4 text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i class="fas fa-trash-alt"></i></button>
+                    <div class="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center mb-6 mx-auto">
+                        <i class="fas ${icons[f.type] || icons.other} text-3xl"></i>
+                    </div>
+                    <h3 class="font-bold text-sm mb-6 truncate px-2 text-slate-800 uppercase tracking-tighter" title="${f.name}">${f.name}</h3>
+                    <a href="${f.url}" target="_blank" class="block w-full py-2.5 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-black hover:bg-blue-600 hover:text-white transition uppercase tracking-widest shadow-sm">Mở tài liệu</a>
+                </div>
+            `).join('');
+        };
+
+        window.changeCategory = (type, btn) => {
+            document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            if(type === 'all') render(allDocs);
+            else render(allDocs.filter(f => f.type === type));
+        };
+
+        fetchDocs();
     </script>
 </body>
 </html>
