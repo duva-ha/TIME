@@ -3,130 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Modern Timeline</title>
+    <title>Giviso Neural Timeline - 10A7</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+        :root { --cyan: #06b6d4; --bg: #0b0f1a; }
+        body { background: var(--bg); color: #e2e8f0; font-family: 'Inter', sans-serif; overflow: hidden; height: 100vh; }
+        .font-futuristic { font-family: 'Orbitron', sans-serif; }
         
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background: radial-gradient(circle at top right, #f8fafc, #e2e8f0); 
-            overflow: hidden; 
+        /* Trục thời gian Neon */
+        .timeline-axis { 
+            position: absolute; top: 50%; left: 0; width: 10000px; height: 4px;
+            background: linear-gradient(90deg, transparent, var(--cyan), #8b5cf6, transparent);
+            transform: translateY(-50%); z-index: 5; box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+        }
+        
+        .day-mark {
+            position: absolute; top: 50%; transform: translate(-50%, -50%);
+            width: 2px; height: 30px; background: rgba(255,255,255,0.2); z-index: 6;
+        }
+        .day-label {
+            position: absolute; top: calc(50% + 25px); transform: translateX(-50%);
+            font-size: 10px; color: #64748b; font-weight: bold; font-family: 'Orbitron';
         }
 
-        /* Trục thời gian Gradient mềm mại */
-        .timeline-track {
-            height: 12px;
-            background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899);
-            border-radius: 50px;
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);
-        }
-
-        /* Thẻ sự kiện Glassmorphism */
-        .event-card {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            border-radius: 20px;
-            padding: 12px 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .event-card:hover {
-            transform: translateY(-5px) scale(1.02);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            background: rgba(255, 255, 255, 0.9);
-        }
-
-        /* Dây kết nối dạng giọt nước/đường cong */
-        .connector-svg {
-            position: absolute;
-            pointer-events: none;
-            overflow: visible;
-            z-index: 1;
-        }
-
-        /* Nút tròn nhấp nháy */
-        .pulse-node {
-            width: 20px;
-            height: 20px;
-            background: white;
-            border: 5px solid #3b82f6;
-            border-radius: 50%;
-            position: absolute;
-            z-index: 10;
-            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
-            70% { box-shadow: 0 0 0 15px rgba(59, 130, 246, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
-        }
-
-        .glass-dock {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            box-shadow: 0 15px 50px rgba(0,0,0,0.1);
-        }
+        #network-container { width: 100vw; height: 100vh; position: absolute; z-index: 10; }
+        .glass-panel { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        
+        /* Form thêm nhanh */
+        .modal { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .modal.active { display: flex; }
     </style>
 </head>
-<body class="h-screen flex flex-col">
+<body>
 
-    <header class="p-6 flex justify-between items-center z-50">
-        <div>
-            <h1 class="text-2xl font-extrabold text-slate-800 tracking-tighter">GIVISO <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">10A7</span></h1>
-            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Hệ thống quản lý thời gian thực</p>
+    <div class="fixed top-6 left-8 z-50">
+        <h1 class="font-futuristic text-xl text-cyan-400 tracking-tighter">NEURAL_TIMELINE_10A7</h1>
+        <div class="flex items-center gap-2 mt-1">
+            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            <span class="text-[9px] text-gray-500 uppercase tracking-widest">System Active: V3.2 Stable</span>
         </div>
-        <div class="glass-dock px-6 py-2 rounded-full flex gap-4 items-center">
-            <span class="text-xs font-bold text-slate-500"><i class="fa-regular fa-calendar mr-2"></i>29/01/2026</span>
-        </div>
-    </header>
+    </div>
 
-    <main class="flex-1 relative overflow-x-auto p-20 scroll-smooth" id="container">
-        <div class="h-full relative" id="timeline-area" style="width: 5000px;">
-            <div class="timeline-track w-full"></div>
-            
-            <div class="absolute left-[400px] top-[150px] group" id="example-ev">
-                <div class="event-card w-56">
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs">
-                            <i class="fa-solid fa-rocket"></i>
-                        </div>
-                        <span class="text-[10px] font-extrabold text-blue-500 uppercase">Khởi động</span>
-                    </div>
-                    <h4 class="text-sm font-bold text-slate-800">Họp Lớp Đầu Năm</h4>
-                    <p class="text-[11px] text-slate-500 mt-1">Triển khai kế hoạch trực nhật cho 6 tổ.</p>
-                </div>
-                <div class="pulse-node" style="top: 215px; left: 50%; transform: translateX(-50%);"></div>
+    <div class="fixed top-24 left-8 z-50 w-64 glass-panel rounded-3xl p-6 border-l-4 border-cyan-500">
+        <input type="text" id="search-input" oninput="neuralSearch()" placeholder="Tìm sự kiện..." class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-[11px] text-white focus:outline-none mb-4">
+        <button onclick="openModal()" class="w-full py-3 bg-cyan-600/20 border border-cyan-500/50 rounded-xl text-[10px] text-cyan-400 hover:bg-cyan-600 hover:text-white transition font-bold uppercase tracking-widest">+ Tạo Sự Kiện Theo Ngày</button>
+    </div>
+
+    <div id="timeline-layer" class="absolute inset-0 pointer-events-none overflow-x-auto scrollbar-hide">
+        <div id="axis-container" class="relative h-full" style="width: 15000px;">
+            <div class="timeline-axis"></div>
+        </div>
+    </div>
+
+    <div id="network-container"></div>
+
+    <div class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[150] w-[80%] glass-panel p-6 rounded-[2.5rem] border border-white/10 shadow-2xl">
+        <div class="flex items-center gap-6">
+            <div class="flex flex-col">
+                <span id="time-display" class="text-[12px] text-cyan-400 font-futuristic mb-1">LIVE_MODE</span>
+                <span class="text-[8px] text-gray-500 uppercase">Chronos Engine v2</span>
             </div>
+            <input type="range" id="time-slider" oninput="travelTime()" class="flex-1 h-1 bg-cyan-900 rounded-lg appearance-none cursor-pointer accent-cyan-400" min="0" max="100" value="100">
         </div>
-    </main>
+    </div>
 
-    <button class="fixed bottom-10 right-10 w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-3xl shadow-2xl shadow-blue-300 flex items-center justify-center transform hover:rotate-90 transition-all duration-500 group">
-        <i class="fa-solid fa-plus text-2xl group-hover:scale-125 transition"></i>
-    </button>
+    <div id="system-modal" class="modal px-4">
+        <div class="glass-panel w-96 p-8 rounded-[2.5rem] border border-cyan-500/30 relative shadow-2xl">
+            <h3 class="font-futuristic text-cyan-400 text-[12px] mb-6 uppercase text-center tracking-widest">Gán Neuron vào Timeline</h3>
+            <input type="date" id="modal-date" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white mb-4 outline-none focus:border-cyan-500">
+            <input type="text" id="modal-input" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-sm text-white focus:outline-none mb-6" placeholder="Nội dung sự kiện...">
+            <button onclick="confirmAdd()" class="w-full py-4 rounded-xl bg-cyan-600 text-black text-[10px] font-bold uppercase tracking-widest hover:bg-cyan-400 transition">Xác nhận Neuron</button>
+            <button onclick="closeModal()" class="w-full mt-2 text-[9px] text-gray-500 uppercase">Hủy bỏ</button>
+        </div>
+    </div>
 
-    <nav class="fixed bottom-8 left-1/2 -translate-x-1/2 glass-dock px-10 py-4 rounded-[30px] flex gap-10 items-center">
-        <button class="text-slate-400 hover:text-blue-600 transition flex flex-col items-center gap-1">
-            <i class="fa-solid fa-shield-halved text-xl"></i>
-            <span class="text-[9px] font-bold uppercase tracking-tighter">Quy định</span>
-        </button>
-        <button class="text-blue-600 transition flex flex-col items-center gap-1">
-            <div class="w-1 h-1 bg-blue-600 rounded-full mb-1"></div>
-            <i class="fa-solid fa-address-book text-xl"></i>
-            <span class="text-[9px] font-bold uppercase tracking-tighter">Danh sách</span>
-        </button>
-        <button class="text-slate-400 hover:text-pink-600 transition flex flex-col items-center gap-1">
-            <i class="fa-solid fa-chart-simple text-xl"></i>
-            <span class="text-[9px] font-bold uppercase tracking-tighter">Báo cáo</span>
-        </button>
-    </nav>
+    <script>
+        const START_DATE = new Date('2025-09-05');
+        const PIXELS_PER_DAY = 150; // Khoảng cách ngày rộng hơn để dễ nhìn mạng lưới
 
+        let nodes = new vis.DataSet();
+        let edges = new vis.DataSet();
+        const colors = ['#06b6d4', '#8b5cf6', '#f43f5e', '#22c55e'];
+
+        const container = document.getElementById('network-container');
+        const network = new vis.Network(container, { nodes, edges }, {
+            nodes: { 
+                shape: 'dot', 
+                font: { color: '#ffffff', face: 'Inter', size: 12 }, 
+                borderWidth: 2, 
+                shadow: { enabled: true, color: 'rgba(6,182,212,0.5)' } 
+            },
+            edges: { color: 'rgba(6, 182, 212, 0.3)', arrows: 'to', smooth: { type: 'curvedCW' }, dashes: true },
+            physics: { enabled: true, solver: 'repulsion', repulsion: { nodeDistance: 150 } }
+        });
+
+        // Khởi tạo vạch ngày
+        function initTimeline() {
+            const axisArea = document.getElementById('axis-container');
+            for(let i=0; i<300; i++) {
+                const cur = new Date(START_DATE);
+                cur.setDate(START_DATE.getDate() + i);
+                const x = i * PIXELS_PER_DAY;
+                
+                const mark = document.createElement('div');
+                mark.className = 'day-mark';
+                mark.style.left = x + 'px';
+                
+                const label = document.createElement('div');
+                label.className = 'day-label';
+                label.style.left = x + 'px';
+                label.innerText = cur.toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit'});
+                
+                axisArea.appendChild(mark);
+                axisArea.appendChild(label);
+            }
+        }
+
+        function openModal() { document.getElementById('system-modal').classList.add('active'); }
+        function closeModal() { document.getElementById('system-modal').classList.remove('active'); }
+
+        function confirmAdd() {
+            const dateVal = document.getElementById('modal-date').value;
+            const title = document.getElementById('modal-input').value;
+            if(!dateVal || !title) return;
+
+            const evDate = new Date(dateVal);
+            const diffDays = Math.ceil((evDate - START_DATE) / (1000*60*60*24));
+            const xPos = diffDays * PIXELS_PER_DAY;
+            const yPos = (Math.random() - 0.5) * 300; // Ngẫu nhiên xung quanh trục
+
+            const nid = Date.now();
+            nodes.add({
+                id: nid,
+                label: title,
+                originalLabel: title,
+                x: xPos,
+                y: yPos,
+                fixed: { x: true, y: false }, // Khóa trục X theo ngày, cho phép kéo Y
+                color: colors[Math.floor(Math.random()*colors.length)],
+                timestamp: nid
+            });
+
+            // Nếu có node trước đó, tự động nối dây (Logic mạng lưới)
+            const all = nodes.get();
+            if(all.length > 1) {
+                edges.add({ from: all[all.length-2].id, to: nid });
+            }
+
+            closeModal();
+            network.focus(nid, { animation: true, scale: 1 });
+        }
+
+        // Chronos Engine: Du hành thời gian
+        function travelTime() {
+            const val = document.getElementById('time-slider').value;
+            const now = Date.now();
+            const start = START_DATE.getTime();
+            const threshold = start + (val/100) * (now - start);
+
+            document.getElementById('time-display').innerText = val == 100 ? "LIVE_MODE" : new Date(threshold).toLocaleDateString('vi-VN');
+
+            nodes.update(nodes.get().map(n => ({ id: n.id, hidden: n.timestamp > threshold })));
+            edges.update(edges.get().map(e => {
+                const toNode = nodes.get(e.to);
+                return { id: e.id, hidden: toNode && toNode.timestamp > threshold };
+            }));
+        }
+
+        // Đồng bộ cuộn trục thời gian với mạng lưới
+        network.on("render", () => {
+            const pos = network.getViewPosition();
+            document.getElementById('timeline-layer').scrollLeft = pos.x - (window.innerWidth/2);
+        });
+
+        function neuralSearch() {
+            const q = document.getElementById('search-input').value.toLowerCase();
+            nodes.update(nodes.get().map(n => ({ id: n.id, opacity: n.originalLabel.toLowerCase().includes(q) ? 1 : 0.1 })));
+        }
+
+        initTimeline();
+    </script>
 </body>
 </html>
