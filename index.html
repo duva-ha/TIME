@@ -3,194 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Giviso Timeline - Quản Lý Theo Ngày</title>
+    <title> Modern Timeline</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
-        body { font-family: 'Inter', sans-serif; background: #f8fafc; overflow: hidden; user-select: none; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
         
-        /* Trục thời gian */
-        .timeline-line { 
-            height: 8px; background: #cbd5e1; 
-            position: absolute; top: 50%; left: 0; width: 10000px; 
-            transform: translateY(-50%); z-index: 5; border-radius: 10px;
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background: radial-gradient(circle at top right, #f8fafc, #e2e8f0); 
+            overflow: hidden; 
         }
 
-        /* Điểm mốc ngày trên trục */
-        .day-mark {
-            position: absolute; top: 50%; transform: translate(-50%, -50%);
-            width: 2px; height: 20px; background: #94a3b8; z-index: 6;
-        }
-        .day-label {
-            position: absolute; top: calc(50% + 20px); transform: translateX(-50%);
-            font-size: 10px; color: #64748b; font-weight: bold;
+        /* Trục thời gian Gradient mềm mại */
+        .timeline-track {
+            height: 12px;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899);
+            border-radius: 50px;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);
         }
 
-        .connector-line { width: 2px; background: #3b82f6; position: absolute; left: 50%; transform: translateX(-50%); z-index: 1; pointer-events: none; opacity: 0.5; }
-        .event-wrapper { position: absolute; cursor: grab; z-index: 10; transition: transform 0.2s; }
-        .node-dot { width: 14px; height: 14px; background: #3b82f6; border: 3px solid white; border-radius: 50%; position: absolute; left: 50%; transform: translate(-50%, -50%); z-index: 20; }
-        
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-        .modal.active { display: flex; }
+        /* Thẻ sự kiện Glassmorphism */
+        .event-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 20px;
+            padding: 12px 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .event-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        /* Dây kết nối dạng giọt nước/đường cong */
+        .connector-svg {
+            position: absolute;
+            pointer-events: none;
+            overflow: visible;
+            z-index: 1;
+        }
+
+        /* Nút tròn nhấp nháy */
+        .pulse-node {
+            width: 20px;
+            height: 20px;
+            background: white;
+            border: 5px solid #3b82f6;
+            border-radius: 50%;
+            position: absolute;
+            z-index: 10;
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+
+        .glass-dock {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 15px 50px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col">
 
-    <header class="p-4 bg-white border-b flex justify-between items-center shadow-sm z-50">
-        <h1 class="text-xl font-bold text-blue-600 italic">GIVISO <span class="text-gray-800 font-light">10A7</span></h1>
-        <div class="text-sm font-bold text-blue-500 bg-blue-50 px-4 py-2 rounded-full border border-blue-100">
-            TRỤC THỜI GIAN THÔNG MINH
+    <header class="p-6 flex justify-between items-center z-50">
+        <div>
+            <h1 class="text-2xl font-extrabold text-slate-800 tracking-tighter">GIVISO <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">10A7</span></h1>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Hệ thống quản lý thời gian thực</p>
+        </div>
+        <div class="glass-dock px-6 py-2 rounded-full flex gap-4 items-center">
+            <span class="text-xs font-bold text-slate-500"><i class="fa-regular fa-calendar mr-2"></i>29/01/2026</span>
         </div>
     </header>
 
-    <main class="flex-1 relative overflow-x-auto p-20" id="main-container">
-        <div class="h-full relative" id="timeline-area" style="width: 10000px;">
-            <div class="timeline-line"></div>
-            </div>
-    </main>
-
-    <button onclick="openModal()" class="fixed bottom-28 right-8 w-16 h-16 bg-blue-600 text-white rounded-full shadow-2xl hover:scale-110 transition-all flex items-center justify-center z-50">
-        <i class="fa-solid fa-plus text-2xl"></i>
-    </button>
-
-    <div id="addModal" class="modal">
-        <div class="bg-white p-6 rounded-3xl w-80 shadow-2xl border">
-            <h3 class="text-lg font-bold mb-4 text-gray-800">Ghi nhận sự kiện</h3>
-            <div class="space-y-4">
-                <div>
-                    <label class="text-[10px] font-bold text-gray-400">NGÀY XẢY RA</label>
-                    <input id="inDate" type="date" class="w-full border-2 border-gray-100 p-2 rounded-xl outline-none focus:border-blue-500 text-sm">
+    <main class="flex-1 relative overflow-x-auto p-20 scroll-smooth" id="container">
+        <div class="h-full relative" id="timeline-area" style="width: 5000px;">
+            <div class="timeline-track w-full"></div>
+            
+            <div class="absolute left-[400px] top-[150px] group" id="example-ev">
+                <div class="event-card w-56">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs">
+                            <i class="fa-solid fa-rocket"></i>
+                        </div>
+                        <span class="text-[10px] font-extrabold text-blue-500 uppercase">Khởi động</span>
+                    </div>
+                    <h4 class="text-sm font-bold text-slate-800">Họp Lớp Đầu Năm</h4>
+                    <p class="text-[11px] text-slate-500 mt-1">Triển khai kế hoạch trực nhật cho 6 tổ.</p>
                 </div>
-                <div>
-                    <label class="text-[10px] font-bold text-gray-400">NỘI DUNG</label>
-                    <input id="inTitle" type="text" placeholder="Tên sự kiện..." class="w-full border-2 border-gray-100 p-2 rounded-xl outline-none focus:border-blue-500 text-sm">
-                </div>
-                <select id="inType" class="w-full border-2 border-gray-100 p-2 rounded-xl text-sm">
-                    <option value="blue">Thông báo</option>
-                    <option value="red">Vi phạm</option>
-                    <option value="green">Khen thưởng</option>
-                </select>
-                <button onclick="confirmAdd()" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-100">Xác nhận</button>
-                <button onclick="closeModal()" class="w-full text-gray-400 text-xs font-bold">Để sau</button>
+                <div class="pulse-node" style="top: 215px; left: 50%; transform: translateX(-50%);"></div>
             </div>
         </div>
-    </div>
+    </main>
 
-    <script>
-        const START_DATE = new Date('2025-09-05'); // Ngày bắt đầu năm học
-        const PIXELS_PER_DAY = 100; // Mỗi ngày cách nhau 100px
+    <button class="fixed bottom-10 right-10 w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-3xl shadow-2xl shadow-blue-300 flex items-center justify-center transform hover:rotate-90 transition-all duration-500 group">
+        <i class="fa-solid fa-plus text-2xl group-hover:scale-125 transition"></i>
+    </button>
 
-        // Khởi tạo vạch ngày trên trục
-        function initTimelineMarks() {
-            const area = document.getElementById('timeline-area');
-            for(let i=0; i<300; i++) {
-                const currentDate = new Date(START_DATE);
-                currentDate.setDate(START_DATE.getDate() + i);
-                
-                const mark = document.createElement('div');
-                mark.className = 'day-mark';
-                mark.style.left = (i * PIXELS_PER_DAY) + 'px';
-                
-                const label = document.createElement('div');
-                label.className = 'day-label';
-                label.style.left = (i * PIXELS_PER_DAY) + 'px';
-                label.innerText = currentDate.toLocaleDateString('vi-VN', {day: '2-digit', month: '2-digit'});
-                
-                area.appendChild(mark);
-                area.appendChild(label);
-            }
-        }
+    <nav class="fixed bottom-8 left-1/2 -translate-x-1/2 glass-dock px-10 py-4 rounded-[30px] flex gap-10 items-center">
+        <button class="text-slate-400 hover:text-blue-600 transition flex flex-col items-center gap-1">
+            <i class="fa-solid fa-shield-halved text-xl"></i>
+            <span class="text-[9px] font-bold uppercase tracking-tighter">Quy định</span>
+        </button>
+        <button class="text-blue-600 transition flex flex-col items-center gap-1">
+            <div class="w-1 h-1 bg-blue-600 rounded-full mb-1"></div>
+            <i class="fa-solid fa-address-book text-xl"></i>
+            <span class="text-[9px] font-bold uppercase tracking-tighter">Danh sách</span>
+        </button>
+        <button class="text-slate-400 hover:text-pink-600 transition flex flex-col items-center gap-1">
+            <i class="fa-solid fa-chart-simple text-xl"></i>
+            <span class="text-[9px] font-bold uppercase tracking-tighter">Báo cáo</span>
+        </button>
+    </nav>
 
-        initTimelineMarks();
-
-        function openModal() { document.getElementById('addModal').classList.add('active'); }
-        function closeModal() { document.getElementById('addModal').classList.remove('active'); }
-
-        function confirmAdd() {
-            const dateVal = document.getElementById('inDate').value;
-            const title = document.getElementById('inTitle').value;
-            const type = document.getElementById('inType').value;
-
-            if(!dateVal || !title) return alert("Vui lòng nhập đủ ngày và nội dung!");
-
-            const eventDate = new Date(dateVal);
-            const diffTime = eventDate - START_DATE;
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-            if(diffDays < 0) return alert("Ngày không hợp lệ (trước ngày khai giảng)!");
-
-            const area = document.getElementById('timeline-area');
-            const leftPos = diffDays * PIXELS_PER_DAY;
-            const isTop = Math.random() > 0.5; // Ngẫu nhiên nằm trên hoặc dưới trục
-            const topPos = isTop ? 100 : 350;
-
-            const newEl = document.createElement('div');
-            newEl.className = 'event-wrapper';
-            newEl.style.left = leftPos + 'px';
-            newEl.style.top = topPos + 'px';
-            newEl.onmousedown = (e) => startDrag(e, newEl);
-
-            newEl.innerHTML = `
-                <div class="bg-white p-3 rounded-2xl shadow-xl border-l-4 border-${type}-500 w-44 relative z-30">
-                    <button onclick="this.closest('.event-wrapper').remove()" class="absolute -top-2 -right-2 bg-white shadow-md rounded-full w-5 h-5 text-[10px] text-red-500 border border-red-50 border-gray-100">X</button>
-                    <p class="text-[9px] font-bold text-gray-400 mb-1 uppercase">${eventDate.toLocaleDateString('vi-VN')}</p>
-                    <p class="text-xs font-bold text-gray-800">${title}</p>
-                </div>
-                <div class="connector-line"></div>
-                <div class="node-dot" style="border-color: ${type}; background: ${type}"></div>
-            `;
-
-            area.appendChild(newEl);
-            updateLines(newEl, topPos);
-            closeModal();
-            
-            // Cuộn đến vị trí mới
-            document.getElementById('main-container').scrollTo({left: leftPos - 300, behavior: 'smooth'});
-        }
-
-        // Logic Kéo rê & Line kết nối
-        let isDragging = false, currentEl = null, offset = { x: 0, y: 0 };
-
-        function startDrag(e, el) {
-            isDragging = true; currentEl = el;
-            const rect = el.getBoundingClientRect();
-            offset.x = e.clientX - rect.left;
-            offset.y = e.clientY - rect.top;
-            el.style.transition = 'none';
-        }
-
-        document.addEventListener('mousemove', (e) => {
-            if (!isDragging || !currentEl) return;
-            const container = document.getElementById('main-container');
-            const rect = container.getBoundingClientRect();
-            let x = e.clientX - rect.left - offset.x + container.scrollLeft;
-            let y = e.clientY - rect.top - offset.y;
-            
-            // Khóa X vào các nấc 100px (Snap to Day) nếu muốn, ở đây để tự do
-            currentEl.style.left = x + 'px';
-            currentEl.style.top = y + 'px';
-            updateLines(currentEl, y);
-        });
-
-        document.addEventListener('mouseup', () => { isDragging = false; currentEl = null; });
-
-        function updateLines(el, y) {
-            const connector = el.querySelector('.connector-line');
-            const dot = el.querySelector('.node-dot');
-            const midY = (window.innerHeight / 2) - 80;
-            const diff = midY - y;
-
-            if (diff > 0) {
-                connector.style.top = '100%'; connector.style.bottom = 'auto';
-                connector.style.height = diff + 'px';
-                dot.style.top = (diff + 10) + 'px'; dot.style.bottom = 'auto';
-            } else {
-                connector.style.bottom = '100%'; connector.style.top = 'auto';
-                connector.style.height = Math.abs(diff) + 'px';
-                dot.style.bottom = (Math.abs(diff) + 10) + 'px'; dot.style.top = 'auto';
-            }
-        }
-    </script>
 </body>
 </html>
