@@ -3,98 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Giviso Timeline - Kéo Rê Linh Hoạt</title>
+    <title>Giviso Pro - Quản lý 10A7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
-        body { font-family: 'Inter', sans-serif; background: #f8fafc; overflow: hidden; user-select: none; }
+        body { font-family: 'Inter', sans-serif; background: #f0f4f8; overflow: hidden; user-select: none; }
         
-        /* Trục chính */
         .timeline-line { 
-            height: 6px; 
-            background: linear-gradient(90deg, #3b82f6, #8b5cf6); 
-            position: absolute; 
-            top: 50%; left: 0; right: 0; 
-            transform: translateY(-50%); 
-            z-index: 5;
-            border-radius: 10px;
+            height: 8px; background: linear-gradient(90deg, #2563eb, #9333ea); 
+            position: absolute; top: 50%; left: 0; right: 0; 
+            transform: translateY(-50%); z-index: 5; border-radius: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
-        /* Sợi dây kết nối */
-        .connector-line {
-            width: 2px;
-            background: #cbd5e1;
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1;
-        }
+        .connector-line { width: 2px; background: #94a3b8; position: absolute; left: 50%; transform: translateX(-50%); z-index: 1; pointer-events: none; }
 
-        /* Thẻ sự kiện có thể kéo rê */
-        .event-wrapper {
-            position: absolute;
-            cursor: grab;
-            z-index: 10;
-            transition: transform 0.1s ease;
-        }
+        .event-wrapper { position: absolute; cursor: grab; z-index: 10; }
         .event-wrapper:active { cursor: grabbing; z-index: 100; }
 
-        .node-dot {
-            width: 16px;
-            height: 16px;
-            background: white;
-            border: 4px solid #3b82f6;
-            border-radius: 50%;
-            position: absolute;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 20;
+        .node-dot { 
+            width: 18px; height: 18px; background: white; border: 4px solid #2563eb; 
+            border-radius: 50%; position: absolute; left: 50%; 
+            transform: translate(-50%, -50%); z-index: 20; transition: all 0.2s;
         }
 
-        .glass-dock { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(15px); border: 1px solid rgba(0,0,0,0.1); }
+        .glass-dock { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.4); }
+        
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        .modal.active { display: flex; }
+
+        /* Menu chuột phải/nhanh */
+        #contextMenu { display: none; position: fixed; z-index: 2000; background: white; border-radius: 12px; shadow: 0 10px 30px rgba(0,0,0,0.2); width: 150px; padding: 6px; border: 1px solid #e2e8f0; }
     </style>
 </head>
 <body class="h-screen flex flex-col">
 
-    <header class="p-4 bg-white border-b flex justify-between items-center shadow-sm">
-        <h1 class="text-xl font-bold text-blue-600 tracking-tight">GIVISO <span class="font-light text-gray-400">| Pro Timeline</span></h1>
-        <div class="text-xs font-bold text-gray-500 bg-gray-100 px-4 py-2 rounded-lg">MẸO: NHẤN GIỮ ĐỂ KÉO RÊ SỰ KIỆN</div>
+    <header class="p-4 bg-white/80 backdrop-blur-md border-b flex justify-between items-center z-50">
+        <div class="flex items-center gap-3">
+            <div class="bg-blue-600 p-2 rounded-lg text-white"><i class="fa-solid fa-timeline"></i></div>
+            <h1 class="text-xl font-bold text-gray-800 tracking-tight">GIVISO <span class="text-blue-600">10A7</span></h1>
+        </div>
+        <div id="clock" class="text-sm font-semibold text-gray-500 bg-gray-100 px-4 py-2 rounded-full"></div>
     </header>
 
-    <main class="flex-1 relative overflow-x-auto p-20" id="container">
+    <main class="flex-1 relative overflow-x-auto p-20" id="main-container">
         <div class="min-w-[5000px] h-full relative" id="timeline-area">
             <div class="timeline-line"></div>
-
-            <div class="event-wrapper" style="left: 300px; top: 150px;" onmousedown="startDrag(event, this)">
-                <div class="event-card bg-white p-3 rounded-xl shadow-xl border w-48 relative z-30">
-                    <p class="text-[10px] font-bold text-blue-600 uppercase">Họp đầu năm</p>
-                    <p class="text-xs text-gray-700">Thảo luận kế hoạch lớp 10A7</p>
+            
+            <div class="event-wrapper" style="left: 150px; top: 180px;" onmousedown="startDrag(event, this)" id="init-event">
+                <div class="bg-white p-4 rounded-2xl shadow-xl border-t-4 border-blue-500 w-52 relative z-30 group">
+                    <div class="flex justify-between mb-1">
+                        <span class="text-[9px] font-bold text-blue-500 uppercase italic">Hệ thống</span>
+                        <button onclick="this.closest('.event-wrapper').remove()" class="text-gray-300 hover:text-red-500"><i class="fa-solid fa-circle-xmark"></i></button>
+                    </div>
+                    <p class="text-sm font-bold text-gray-800">Bắt đầu quản lý</p>
+                    <p class="text-[11px] text-gray-500 leading-tight">Kéo thẻ này để thay đổi thời gian hoặc vị trí.</p>
                 </div>
-                <div class="connector-line" style="top: 100%; height: calc(50vh - 150px - 50%);"></div>
-                <div class="node-dot" style="top: calc(50vh - 150px - 50%);"></div>
+                <div class="connector-line"></div>
+                <div class="node-dot"></div>
             </div>
         </div>
     </main>
 
-    <button onclick="addNewEvent()" class="fixed bottom-24 right-8 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-2xl hover:scale-110 transition flex items-center justify-center z-50">
-        <i class="fa-solid fa-plus text-xl"></i>
+    <button onclick="openAddModal()" class="fixed bottom-28 right-8 w-16 h-16 bg-blue-600 text-white rounded-full shadow-2xl hover:scale-110 hover:rotate-90 transition-all flex items-center justify-center z-50">
+        <i class="fa-solid fa-plus text-2xl"></i>
     </button>
 
-    <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 flex gap-8 px-10 py-3 rounded-2xl glass-dock z-50 shadow-2xl">
-        <button class="flex flex-col items-center text-gray-400 hover:text-blue-600"><i class="fa-solid fa-layer-group"></i><span class="text-[9px] font-bold mt-1">QUY ĐỊNH</span></button>
-        <button class="flex flex-col items-center text-gray-400 hover:text-blue-600"><i class="fa-solid fa-user-graduate"></i><span class="text-[9px] font-bold mt-1">LỚP 10A7</span></button>
-        <button class="flex flex-col items-center text-gray-400 hover:text-blue-600"><i class="fa-solid fa-calendar-check"></i><span class="text-[9px] font-bold mt-1">TRỰC NHẬT</span></button>
+    <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 flex gap-4 px-8 py-3 rounded-3xl glass-dock z-50 shadow-2xl">
+        <button class="p-3 hover:bg-blue-50 rounded-2xl transition group flex flex-col items-center">
+            <i class="fa-solid fa-gavel text-xl text-gray-400 group-hover:text-blue-600"></i>
+            <span class="text-[9px] font-bold text-gray-400 group-hover:text-blue-600 mt-1 uppercase">Quy định</span>
+        </button>
+        <button class="p-3 hover:bg-blue-50 rounded-2xl transition group flex flex-col items-center border-x px-6">
+            <i class="fa-solid fa-id-card-clip text-xl text-gray-400 group-hover:text-blue-600"></i>
+            <span class="text-[9px] font-bold text-gray-400 group-hover:text-blue-600 mt-1 uppercase">Danh sách</span>
+        </button>
+        <button class="p-3 hover:bg-blue-50 rounded-2xl transition group flex flex-col items-center">
+            <i class="fa-solid fa-file-invoice text-xl text-gray-400 group-hover:text-blue-600"></i>
+            <span class="text-[9px] font-bold text-gray-400 group-hover:text-blue-600 mt-1 uppercase">Báo cáo</span>
+        </button>
     </nav>
+
+    <div id="addModal" class="modal">
+        <div class="bg-white p-6 rounded-3xl w-80 shadow-2xl">
+            <h3 class="text-lg font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-pen-nib text-blue-600"></i> Thêm nội dung</h3>
+            <div class="space-y-3">
+                <input id="inTitle" type="text" placeholder="Tiêu đề sự kiện" class="w-full border-2 border-gray-100 p-3 rounded-xl outline-none focus:border-blue-500">
+                <select id="inType" class="w-full border-2 border-gray-100 p-3 rounded-xl outline-none">
+                    <option value="blue">Thông báo chung</option>
+                    <option value="red">Vi phạm / Nhắc nhở</option>
+                    <option value="green">Khen thưởng</option>
+                </select>
+                <div class="flex gap-2 mt-4">
+                    <button onclick="closeModal()" class="flex-1 py-3 text-gray-400 font-bold">Hủy</button>
+                    <button onclick="confirmAdd()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold">Thêm ngay</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         let isDragging = false;
-        let currentElement = null;
+        let currentEl = null;
         let offset = { x: 0, y: 0 };
 
+        // Cập nhật đồng hồ
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleString('vi-VN');
+        }, 1000);
+
+        function openAddModal() { document.getElementById('addModal').classList.add('active'); }
+        function closeModal() { document.getElementById('addModal').classList.remove('active'); }
+
+        // Logic Kéo Rê
         function startDrag(e, el) {
             isDragging = true;
-            currentElement = el;
+            currentEl = el;
             const rect = el.getBoundingClientRect();
             offset.x = e.clientX - rect.left;
             offset.y = e.clientY - rect.top;
@@ -102,72 +128,84 @@
         }
 
         document.addEventListener('mousemove', (e) => {
-            if (!isDragging || !currentElement) return;
+            if (!isDragging || !currentEl) return;
+            const container = document.getElementById('main-container');
+            const rect = container.getBoundingClientRect();
 
-            const container = document.getElementById('container');
-            const containerRect = container.getBoundingClientRect();
+            let x = e.clientX - rect.left - offset.x + container.scrollLeft;
+            let y = e.clientY - rect.top - offset.y;
 
-            // Tính toán vị trí mới
-            let x = e.clientX - containerRect.left - offset.x + container.scrollLeft;
-            let y = e.clientY - containerRect.top - offset.y;
-
-            // Cập nhật vị trí thẻ
-            currentElement.style.left = `${x}px`;
-            currentElement.style.top = `${y}px`;
-
-            // Cập nhật Line kết nối và Nút tròn
-            updateConnector(currentElement, y);
+            currentEl.style.left = x + 'px';
+            currentEl.style.top = y + 'px';
+            
+            renderLines(currentEl, y);
         });
 
         document.addEventListener('mouseup', () => {
-            if (currentElement) currentElement.style.transition = 'all 0.1s ease';
-            isDragging = false;
-            currentElement = null;
+            if(currentEl) currentEl.style.transition = 'all 0.2s ease-out';
+            isDragging = false; 
+            currentEl = null;
         });
 
-        function updateConnector(el, currentY) {
+        function renderLines(el, y) {
             const connector = el.querySelector('.connector-line');
             const dot = el.querySelector('.node-dot');
-            const timelineCenterY = window.innerHeight / 2 - 80; // Trục giữa màn hình
+            const midY = (window.innerHeight / 2) - 80; // Điểm giữa trục
+            const diff = midY - y;
 
-            const distance = timelineCenterY - currentY;
-
-            if (distance > 0) { // Thẻ nằm trên trục
+            if (diff > 0) { // Thẻ nằm trên trục
                 connector.style.top = '100%';
                 connector.style.bottom = 'auto';
-                connector.style.height = `${distance}px`;
-                dot.style.top = `${distance + 40}px`; 
+                connector.style.height = diff + 'px';
+                dot.style.top = (diff + 10) + 'px';
+                dot.style.bottom = 'auto';
             } else { // Thẻ nằm dưới trục
-                connector.style.top = 'auto';
                 connector.style.bottom = '100%';
-                connector.style.height = `${Math.abs(distance)}px`;
-                dot.style.top = `-${Math.abs(distance)}px`;
+                connector.style.top = 'auto';
+                connector.style.height = Math.abs(diff) + 'px';
+                dot.style.bottom = (Math.abs(diff) + 10) + 'px';
+                dot.style.top = 'auto';
             }
         }
 
-        function addNewEvent() {
-            const area = document.getElementById('timeline-area');
-            const id = Date.now();
-            const newEvent = document.createElement('div');
-            newEvent.className = 'event-wrapper';
-            newEvent.style.left = (document.getElementById('container').scrollLeft + 100) + 'px';
-            newEvent.style.top = '150px';
-            newEvent.onmousedown = (e) => startDrag(e, newEvent);
+        // Khởi tạo line cho các thẻ có sẵn
+        document.querySelectorAll('.event-wrapper').forEach(el => {
+            renderLines(el, parseInt(el.style.top));
+        });
 
-            newEvent.innerHTML = `
-                <div class="event-card bg-white p-3 rounded-xl shadow-xl border border-indigo-100 w-48 relative z-30">
-                    <div class="flex justify-between items-start mb-1">
-                        <span class="text-[9px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">MỚI</span>
-                        <button onclick="this.closest('.event-wrapper').remove()" class="text-gray-300 hover:text-red-500 text-xs"><i class="fa-solid fa-xmark"></i></button>
+        function confirmAdd() {
+            const title = document.getElementById('inTitle').value;
+            const type = document.getElementById('inType').value;
+            const colors = { blue: 'border-blue-500 text-blue-500', red: 'border-red-500 text-red-500', green: 'border-green-500 text-green-500' };
+
+            if (!title) return alert("Vui lòng nhập tiêu đề");
+
+            const area = document.getElementById('timeline-area');
+            const container = document.getElementById('main-container');
+            const newEl = document.createElement('div');
+            newEl.className = 'event-wrapper';
+            const startX = container.scrollLeft + 300;
+            newEl.style.left = startX + 'px';
+            newEl.style.top = '100px';
+            newEl.onmousedown = (e) => startDrag(e, newEl);
+
+            newEl.innerHTML = `
+                <div class="bg-white p-4 rounded-2xl shadow-xl border-t-4 ${colors[type].split(' ')[0]} w-52 relative z-30">
+                    <div class="flex justify-between mb-1">
+                        <span class="text-[9px] font-bold ${colors[type].split(' ')[1]} uppercase italic">Sự kiện mới</span>
+                        <button onclick="this.closest('.event-wrapper').remove()" class="text-gray-300 hover:text-red-500"><i class="fa-solid fa-circle-xmark"></i></button>
                     </div>
-                    <p class="text-xs font-bold text-gray-800">Sự kiện mới...</p>
-                    <p class="text-[10px] text-gray-500">Kéo để chỉnh ngày</p>
+                    <p class="text-sm font-bold text-gray-800">${title}</p>
+                    <p class="text-[10px] text-gray-400">Vừa tạo xong</p>
                 </div>
-                <div class="connector-line" style="top: 100%; height: 110px;"></div>
-                <div class="node-dot" style="top: 150px;"></div>
+                <div class="connector-line"></div>
+                <div class="node-dot" style="border-color: ${type}"></div>
             `;
-            area.appendChild(newEvent);
-            updateConnector(newEvent, 150);
+
+            area.appendChild(newEl);
+            renderLines(newEl, 100);
+            closeModal();
+            document.getElementById('inTitle').value = '';
         }
     </script>
 </body>
