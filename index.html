@@ -3,124 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Giviso Pro - Quản lý 10A7</title>
+    <title>Giviso Timeline - Quản Lý Theo Ngày</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
-        body { font-family: 'Inter', sans-serif; background: #f0f4f8; overflow: hidden; user-select: none; }
+        body { font-family: 'Inter', sans-serif; background: #f8fafc; overflow: hidden; user-select: none; }
         
+        /* Trục thời gian */
         .timeline-line { 
-            height: 8px; background: linear-gradient(90deg, #2563eb, #9333ea); 
-            position: absolute; top: 50%; left: 0; right: 0; 
-            transform: translateY(-50%); z-index: 5; border-radius: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            height: 8px; background: #cbd5e1; 
+            position: absolute; top: 50%; left: 0; width: 10000px; 
+            transform: translateY(-50%); z-index: 5; border-radius: 10px;
         }
 
-        .connector-line { width: 2px; background: #94a3b8; position: absolute; left: 50%; transform: translateX(-50%); z-index: 1; pointer-events: none; }
-
-        .event-wrapper { position: absolute; cursor: grab; z-index: 10; }
-        .event-wrapper:active { cursor: grabbing; z-index: 100; }
-
-        .node-dot { 
-            width: 18px; height: 18px; background: white; border: 4px solid #2563eb; 
-            border-radius: 50%; position: absolute; left: 50%; 
-            transform: translate(-50%, -50%); z-index: 20; transition: all 0.2s;
+        /* Điểm mốc ngày trên trục */
+        .day-mark {
+            position: absolute; top: 50%; transform: translate(-50%, -50%);
+            width: 2px; height: 20px; background: #94a3b8; z-index: 6;
+        }
+        .day-label {
+            position: absolute; top: calc(50% + 20px); transform: translateX(-50%);
+            font-size: 10px; color: #64748b; font-weight: bold;
         }
 
-        .glass-dock { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.4); }
+        .connector-line { width: 2px; background: #3b82f6; position: absolute; left: 50%; transform: translateX(-50%); z-index: 1; pointer-events: none; opacity: 0.5; }
+        .event-wrapper { position: absolute; cursor: grab; z-index: 10; transition: transform 0.2s; }
+        .node-dot { width: 14px; height: 14px; background: #3b82f6; border: 3px solid white; border-radius: 50%; position: absolute; left: 50%; transform: translate(-50%, -50%); z-index: 20; }
         
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
         .modal.active { display: flex; }
-
-        /* Menu chuột phải/nhanh */
-        #contextMenu { display: none; position: fixed; z-index: 2000; background: white; border-radius: 12px; shadow: 0 10px 30px rgba(0,0,0,0.2); width: 150px; padding: 6px; border: 1px solid #e2e8f0; }
     </style>
 </head>
 <body class="h-screen flex flex-col">
 
-    <header class="p-4 bg-white/80 backdrop-blur-md border-b flex justify-between items-center z-50">
-        <div class="flex items-center gap-3">
-            <div class="bg-blue-600 p-2 rounded-lg text-white"><i class="fa-solid fa-timeline"></i></div>
-            <h1 class="text-xl font-bold text-gray-800 tracking-tight">GIVISO <span class="text-blue-600">10A7</span></h1>
+    <header class="p-4 bg-white border-b flex justify-between items-center shadow-sm z-50">
+        <h1 class="text-xl font-bold text-blue-600 italic">GIVISO <span class="text-gray-800 font-light">10A7</span></h1>
+        <div class="text-sm font-bold text-blue-500 bg-blue-50 px-4 py-2 rounded-full border border-blue-100">
+            TRỤC THỜI GIAN THÔNG MINH
         </div>
-        <div id="clock" class="text-sm font-semibold text-gray-500 bg-gray-100 px-4 py-2 rounded-full"></div>
     </header>
 
     <main class="flex-1 relative overflow-x-auto p-20" id="main-container">
-        <div class="min-w-[5000px] h-full relative" id="timeline-area">
+        <div class="h-full relative" id="timeline-area" style="width: 10000px;">
             <div class="timeline-line"></div>
-            
-            <div class="event-wrapper" style="left: 150px; top: 180px;" onmousedown="startDrag(event, this)" id="init-event">
-                <div class="bg-white p-4 rounded-2xl shadow-xl border-t-4 border-blue-500 w-52 relative z-30 group">
-                    <div class="flex justify-between mb-1">
-                        <span class="text-[9px] font-bold text-blue-500 uppercase italic">Hệ thống</span>
-                        <button onclick="this.closest('.event-wrapper').remove()" class="text-gray-300 hover:text-red-500"><i class="fa-solid fa-circle-xmark"></i></button>
-                    </div>
-                    <p class="text-sm font-bold text-gray-800">Bắt đầu quản lý</p>
-                    <p class="text-[11px] text-gray-500 leading-tight">Kéo thẻ này để thay đổi thời gian hoặc vị trí.</p>
-                </div>
-                <div class="connector-line"></div>
-                <div class="node-dot"></div>
             </div>
-        </div>
     </main>
 
-    <button onclick="openAddModal()" class="fixed bottom-28 right-8 w-16 h-16 bg-blue-600 text-white rounded-full shadow-2xl hover:scale-110 hover:rotate-90 transition-all flex items-center justify-center z-50">
+    <button onclick="openModal()" class="fixed bottom-28 right-8 w-16 h-16 bg-blue-600 text-white rounded-full shadow-2xl hover:scale-110 transition-all flex items-center justify-center z-50">
         <i class="fa-solid fa-plus text-2xl"></i>
     </button>
 
-    <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 flex gap-4 px-8 py-3 rounded-3xl glass-dock z-50 shadow-2xl">
-        <button class="p-3 hover:bg-blue-50 rounded-2xl transition group flex flex-col items-center">
-            <i class="fa-solid fa-gavel text-xl text-gray-400 group-hover:text-blue-600"></i>
-            <span class="text-[9px] font-bold text-gray-400 group-hover:text-blue-600 mt-1 uppercase">Quy định</span>
-        </button>
-        <button class="p-3 hover:bg-blue-50 rounded-2xl transition group flex flex-col items-center border-x px-6">
-            <i class="fa-solid fa-id-card-clip text-xl text-gray-400 group-hover:text-blue-600"></i>
-            <span class="text-[9px] font-bold text-gray-400 group-hover:text-blue-600 mt-1 uppercase">Danh sách</span>
-        </button>
-        <button class="p-3 hover:bg-blue-50 rounded-2xl transition group flex flex-col items-center">
-            <i class="fa-solid fa-file-invoice text-xl text-gray-400 group-hover:text-blue-600"></i>
-            <span class="text-[9px] font-bold text-gray-400 group-hover:text-blue-600 mt-1 uppercase">Báo cáo</span>
-        </button>
-    </nav>
-
     <div id="addModal" class="modal">
-        <div class="bg-white p-6 rounded-3xl w-80 shadow-2xl">
-            <h3 class="text-lg font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-pen-nib text-blue-600"></i> Thêm nội dung</h3>
-            <div class="space-y-3">
-                <input id="inTitle" type="text" placeholder="Tiêu đề sự kiện" class="w-full border-2 border-gray-100 p-3 rounded-xl outline-none focus:border-blue-500">
-                <select id="inType" class="w-full border-2 border-gray-100 p-3 rounded-xl outline-none">
-                    <option value="blue">Thông báo chung</option>
-                    <option value="red">Vi phạm / Nhắc nhở</option>
+        <div class="bg-white p-6 rounded-3xl w-80 shadow-2xl border">
+            <h3 class="text-lg font-bold mb-4 text-gray-800">Ghi nhận sự kiện</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] font-bold text-gray-400">NGÀY XẢY RA</label>
+                    <input id="inDate" type="date" class="w-full border-2 border-gray-100 p-2 rounded-xl outline-none focus:border-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-400">NỘI DUNG</label>
+                    <input id="inTitle" type="text" placeholder="Tên sự kiện..." class="w-full border-2 border-gray-100 p-2 rounded-xl outline-none focus:border-blue-500 text-sm">
+                </div>
+                <select id="inType" class="w-full border-2 border-gray-100 p-2 rounded-xl text-sm">
+                    <option value="blue">Thông báo</option>
+                    <option value="red">Vi phạm</option>
                     <option value="green">Khen thưởng</option>
                 </select>
-                <div class="flex gap-2 mt-4">
-                    <button onclick="closeModal()" class="flex-1 py-3 text-gray-400 font-bold">Hủy</button>
-                    <button onclick="confirmAdd()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold">Thêm ngay</button>
-                </div>
+                <button onclick="confirmAdd()" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-100">Xác nhận</button>
+                <button onclick="closeModal()" class="w-full text-gray-400 text-xs font-bold">Để sau</button>
             </div>
         </div>
     </div>
 
     <script>
-        let isDragging = false;
-        let currentEl = null;
-        let offset = { x: 0, y: 0 };
+        const START_DATE = new Date('2025-09-05'); // Ngày bắt đầu năm học
+        const PIXELS_PER_DAY = 100; // Mỗi ngày cách nhau 100px
 
-        // Cập nhật đồng hồ
-        setInterval(() => {
-            const now = new Date();
-            document.getElementById('clock').innerText = now.toLocaleString('vi-VN');
-        }, 1000);
+        // Khởi tạo vạch ngày trên trục
+        function initTimelineMarks() {
+            const area = document.getElementById('timeline-area');
+            for(let i=0; i<300; i++) {
+                const currentDate = new Date(START_DATE);
+                currentDate.setDate(START_DATE.getDate() + i);
+                
+                const mark = document.createElement('div');
+                mark.className = 'day-mark';
+                mark.style.left = (i * PIXELS_PER_DAY) + 'px';
+                
+                const label = document.createElement('div');
+                label.className = 'day-label';
+                label.style.left = (i * PIXELS_PER_DAY) + 'px';
+                label.innerText = currentDate.toLocaleDateString('vi-VN', {day: '2-digit', month: '2-digit'});
+                
+                area.appendChild(mark);
+                area.appendChild(label);
+            }
+        }
 
-        function openAddModal() { document.getElementById('addModal').classList.add('active'); }
+        initTimelineMarks();
+
+        function openModal() { document.getElementById('addModal').classList.add('active'); }
         function closeModal() { document.getElementById('addModal').classList.remove('active'); }
 
-        // Logic Kéo Rê
+        function confirmAdd() {
+            const dateVal = document.getElementById('inDate').value;
+            const title = document.getElementById('inTitle').value;
+            const type = document.getElementById('inType').value;
+
+            if(!dateVal || !title) return alert("Vui lòng nhập đủ ngày và nội dung!");
+
+            const eventDate = new Date(dateVal);
+            const diffTime = eventDate - START_DATE;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if(diffDays < 0) return alert("Ngày không hợp lệ (trước ngày khai giảng)!");
+
+            const area = document.getElementById('timeline-area');
+            const leftPos = diffDays * PIXELS_PER_DAY;
+            const isTop = Math.random() > 0.5; // Ngẫu nhiên nằm trên hoặc dưới trục
+            const topPos = isTop ? 100 : 350;
+
+            const newEl = document.createElement('div');
+            newEl.className = 'event-wrapper';
+            newEl.style.left = leftPos + 'px';
+            newEl.style.top = topPos + 'px';
+            newEl.onmousedown = (e) => startDrag(e, newEl);
+
+            newEl.innerHTML = `
+                <div class="bg-white p-3 rounded-2xl shadow-xl border-l-4 border-${type}-500 w-44 relative z-30">
+                    <button onclick="this.closest('.event-wrapper').remove()" class="absolute -top-2 -right-2 bg-white shadow-md rounded-full w-5 h-5 text-[10px] text-red-500 border border-red-50 border-gray-100">X</button>
+                    <p class="text-[9px] font-bold text-gray-400 mb-1 uppercase">${eventDate.toLocaleDateString('vi-VN')}</p>
+                    <p class="text-xs font-bold text-gray-800">${title}</p>
+                </div>
+                <div class="connector-line"></div>
+                <div class="node-dot" style="border-color: ${type}; background: ${type}"></div>
+            `;
+
+            area.appendChild(newEl);
+            updateLines(newEl, topPos);
+            closeModal();
+            
+            // Cuộn đến vị trí mới
+            document.getElementById('main-container').scrollTo({left: leftPos - 300, behavior: 'smooth'});
+        }
+
+        // Logic Kéo rê & Line kết nối
+        let isDragging = false, currentEl = null, offset = { x: 0, y: 0 };
+
         function startDrag(e, el) {
-            isDragging = true;
-            currentEl = el;
+            isDragging = true; currentEl = el;
             const rect = el.getBoundingClientRect();
             offset.x = e.clientX - rect.left;
             offset.y = e.clientY - rect.top;
@@ -131,81 +164,32 @@
             if (!isDragging || !currentEl) return;
             const container = document.getElementById('main-container');
             const rect = container.getBoundingClientRect();
-
             let x = e.clientX - rect.left - offset.x + container.scrollLeft;
             let y = e.clientY - rect.top - offset.y;
-
+            
+            // Khóa X vào các nấc 100px (Snap to Day) nếu muốn, ở đây để tự do
             currentEl.style.left = x + 'px';
             currentEl.style.top = y + 'px';
-            
-            renderLines(currentEl, y);
+            updateLines(currentEl, y);
         });
 
-        document.addEventListener('mouseup', () => {
-            if(currentEl) currentEl.style.transition = 'all 0.2s ease-out';
-            isDragging = false; 
-            currentEl = null;
-        });
+        document.addEventListener('mouseup', () => { isDragging = false; currentEl = null; });
 
-        function renderLines(el, y) {
+        function updateLines(el, y) {
             const connector = el.querySelector('.connector-line');
             const dot = el.querySelector('.node-dot');
-            const midY = (window.innerHeight / 2) - 80; // Điểm giữa trục
+            const midY = (window.innerHeight / 2) - 80;
             const diff = midY - y;
 
-            if (diff > 0) { // Thẻ nằm trên trục
-                connector.style.top = '100%';
-                connector.style.bottom = 'auto';
+            if (diff > 0) {
+                connector.style.top = '100%'; connector.style.bottom = 'auto';
                 connector.style.height = diff + 'px';
-                dot.style.top = (diff + 10) + 'px';
-                dot.style.bottom = 'auto';
-            } else { // Thẻ nằm dưới trục
-                connector.style.bottom = '100%';
-                connector.style.top = 'auto';
+                dot.style.top = (diff + 10) + 'px'; dot.style.bottom = 'auto';
+            } else {
+                connector.style.bottom = '100%'; connector.style.top = 'auto';
                 connector.style.height = Math.abs(diff) + 'px';
-                dot.style.bottom = (Math.abs(diff) + 10) + 'px';
-                dot.style.top = 'auto';
+                dot.style.bottom = (Math.abs(diff) + 10) + 'px'; dot.style.top = 'auto';
             }
-        }
-
-        // Khởi tạo line cho các thẻ có sẵn
-        document.querySelectorAll('.event-wrapper').forEach(el => {
-            renderLines(el, parseInt(el.style.top));
-        });
-
-        function confirmAdd() {
-            const title = document.getElementById('inTitle').value;
-            const type = document.getElementById('inType').value;
-            const colors = { blue: 'border-blue-500 text-blue-500', red: 'border-red-500 text-red-500', green: 'border-green-500 text-green-500' };
-
-            if (!title) return alert("Vui lòng nhập tiêu đề");
-
-            const area = document.getElementById('timeline-area');
-            const container = document.getElementById('main-container');
-            const newEl = document.createElement('div');
-            newEl.className = 'event-wrapper';
-            const startX = container.scrollLeft + 300;
-            newEl.style.left = startX + 'px';
-            newEl.style.top = '100px';
-            newEl.onmousedown = (e) => startDrag(e, newEl);
-
-            newEl.innerHTML = `
-                <div class="bg-white p-4 rounded-2xl shadow-xl border-t-4 ${colors[type].split(' ')[0]} w-52 relative z-30">
-                    <div class="flex justify-between mb-1">
-                        <span class="text-[9px] font-bold ${colors[type].split(' ')[1]} uppercase italic">Sự kiện mới</span>
-                        <button onclick="this.closest('.event-wrapper').remove()" class="text-gray-300 hover:text-red-500"><i class="fa-solid fa-circle-xmark"></i></button>
-                    </div>
-                    <p class="text-sm font-bold text-gray-800">${title}</p>
-                    <p class="text-[10px] text-gray-400">Vừa tạo xong</p>
-                </div>
-                <div class="connector-line"></div>
-                <div class="node-dot" style="border-color: ${type}"></div>
-            `;
-
-            area.appendChild(newEl);
-            renderLines(newEl, 100);
-            closeModal();
-            document.getElementById('inTitle').value = '';
         }
     </script>
 </body>
