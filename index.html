@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Giviso Timeline - Thêm Sự Kiện</title>
+    <title>Giviso Timeline - Tương tác thông minh</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -11,16 +11,24 @@
         body { font-family: 'Inter', sans-serif; background: #f1f5f9; overflow: hidden; }
         .timeline-container::-webkit-scrollbar { height: 8px; }
         .timeline-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .glass-dock { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(0,0,0,0.05); }
         .timeline-line { height: 4px; background: #3b82f6; position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%); z-index: 1; }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
+        
+        /* Hiệu ứng pulse cho nút tương tác */
+        .node-active { transform: scale(1.3); box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); }
+        .event-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
         .modal.active { display: flex; }
+
+        /* Menu nhanh khi click vào nút tròn */
+        .quick-menu { display: none; position: absolute; background: white; border-radius: 8px; shadow: 0 10px 25px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; z-index: 60; padding: 4px; flex-direction: column; gap: 2px; }
+        .quick-menu.active { display: flex; }
     </style>
 </head>
 <body class="h-screen flex flex-col">
 
     <header class="p-4 bg-white border-b flex justify-between items-center shadow-sm">
-        <h1 class="text-xl font-bold text-blue-600 tracking-tight">GIVISO SMART TIMELINE</h1>
+        <h1 class="text-xl font-bold text-blue-600 tracking-tight italic">GIVISO <span class="text-gray-800 font-normal">TIMELINE</span></h1>
         <div class="flex items-center gap-4 text-sm font-medium text-gray-600">
             <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full">Lớp 10A7</span>
             <span id="current-date"></span>
@@ -28,109 +36,145 @@
     </header>
 
     <main class="flex-1 relative overflow-x-auto timeline-container p-20" id="timeline-scroll">
-        <div class="min-w-[3000px] h-full relative" id="timeline-content">
+        <div class="min-w-[4000px] h-full relative" id="timeline-content">
             <div class="timeline-line"></div>
             
-            <div class="absolute left-10 top-[40%] flex flex-col items-center">
-                <div class="bg-blue-500 w-4 h-4 rounded-full border-4 border-white shadow mb-2 z-10"></div>
-                <div class="bg-white p-3 rounded-xl shadow-sm border w-40 text-center">
-                    <p class="text-[10px] font-bold text-blue-500 uppercase">Khai giảng</p>
-                    <p class="text-xs font-semibold">05/09</p>
+            <div class="event-wrapper absolute left-20 top-[40%] flex flex-col items-center" id="event-0">
+                <button onclick="showQuickMenu(event, 'event-0')" class="node-btn bg-blue-600 w-5 h-5 rounded-full border-4 border-white shadow-lg hover:scale-125 transition-transform z-20 relative"></button>
+                <div class="event-card bg-white p-3 rounded-xl shadow-md border border-blue-100 w-44 mt-4 text-center">
+                    <p class="text-[10px] font-bold text-blue-500 uppercase">Khởi tạo</p>
+                    <p class="text-xs font-semibold">Chào mừng năm học mới</p>
                 </div>
             </div>
         </div>
     </main>
 
-    <button onclick="toggleModal()" class="fixed bottom-28 right-8 w-16 h-16 bg-blue-600 text-white rounded-full shadow-2xl hover:scale-110 hover:bg-blue-700 transition-all flex items-center justify-center z-50">
-        <i class="fa-solid fa-plus text-2xl"></i>
+    <div id="quickMenu" class="quick-menu w-32 shadow-2xl scale-95 transition-all">
+        <button onclick="openModalFromMenu()" class="text-left px-3 py-2 text-xs font-bold text-blue-600 hover:bg-blue-50 rounded flex items-center gap-2">
+            <i class="fa-solid fa-plus-circle"></i> Thêm mới
+        </button>
+        <button onclick="deleteEvent()" class="text-left px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded flex items-center gap-2 border-t">
+            <i class="fa-solid fa-trash"></i> Xóa điểm này
+        </button>
+    </div>
+
+    <button onclick="toggleModal()" class="fixed bottom-24 right-8 w-14 h-14 bg-blue-600 text-white rounded-full shadow-2xl hover:rotate-90 hover:bg-blue-700 transition-all flex items-center justify-center z-50">
+        <i class="fa-solid fa-plus text-xl"></i>
     </button>
 
-    <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 flex gap-6 px-8 py-3 rounded-3xl glass-dock z-50 shadow-xl">
-        <button class="flex flex-col items-center text-gray-500 hover:text-blue-600"><i class="fa-solid fa-book text-xl"></i><span class="text-[10px] font-bold">QUY ĐỊNH</span></button>
-        <button class="flex flex-col items-center text-gray-500 hover:text-blue-600"><i class="fa-solid fa-users text-xl"></i><span class="text-[10px] font-bold">DANH SÁCH</span></button>
-        <button class="flex flex-col items-center text-gray-500 hover:text-blue-600"><i class="fa-solid fa-tasks text-xl"></i><span class="text-[10px] font-bold">PHÂN CÔNG</span></button>
-        <button class="flex flex-col items-center text-gray-500 hover:text-blue-600"><i class="fa-solid fa-chart-pie text-xl"></i><span class="text-[10px] font-bold">BÁO CÁO</span></button>
+    <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 flex gap-8 px-10 py-3 rounded-full bg-white/90 backdrop-blur-md border border-gray-200 z-50 shadow-2xl">
+        <button class="flex flex-col items-center text-gray-400 hover:text-blue-600"><i class="fa-solid fa-book text-xl"></i><span class="text-[9px] font-bold mt-1 uppercase">Quy định</span></button>
+        <button class="flex flex-col items-center text-gray-400 hover:text-blue-600"><i class="fa-solid fa-users text-xl"></i><span class="text-[9px] font-bold mt-1 uppercase">Danh sách</span></button>
+        <button class="flex flex-col items-center text-gray-400 hover:text-blue-600"><i class="fa-solid fa-tasks text-xl"></i><span class="text-[9px] font-bold mt-1 uppercase">Phân công</span></button>
+        <button class="flex flex-col items-center text-gray-400 hover:text-blue-600"><i class="fa-solid fa-chart-line text-xl"></i><span class="text-[9px] font-bold mt-1 uppercase">Báo cáo</span></button>
     </nav>
 
     <div id="eventModal" class="modal px-4">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h2 class="text-lg font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-calendar-plus text-blue-500"></i> Thêm sự kiện mới</h2>
+        <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <h2 class="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800"><i class="fa-solid fa-feather text-blue-500"></i> Nội dung mới</h2>
             <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 mb-1">LOẠI SỰ KIỆN</label>
-                    <select id="eventType" class="w-full border p-2 rounded-lg outline-none focus:border-blue-500">
-                        <option value="blue">Thông báo chung</option>
-                        <option value="green">Khen thưởng / Tuyên dương</option>
-                        <option value="red">Vi phạm / Nhắc nhở</option>
-                        <option value="orange">Lịch kiểm tra</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 mb-1">TIÊU ĐỀ</label>
-                    <input id="eventTitle" type="text" placeholder="Ví dụ: Họp ban cán sự lớp" class="w-full border p-2 rounded-lg outline-none focus:border-blue-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 mb-1">NỘI DUNG NGẮN</label>
-                    <textarea id="eventDesc" class="w-full border p-2 rounded-lg h-20 outline-none focus:border-blue-500" placeholder="Chi tiết sự kiện..."></textarea>
-                </div>
-                <div class="flex gap-2 pt-2">
-                    <button onclick="toggleModal()" class="flex-1 py-2 bg-gray-100 text-gray-600 rounded-lg font-bold">Hủy</button>
-                    <button onclick="addEvent()" class="flex-1 py-2 bg-blue-600 text-white rounded-lg font-bold shadow-lg shadow-blue-200">Lưu sự kiện</button>
+                <select id="eventType" class="w-full border p-2 rounded-lg outline-none bg-gray-50 text-sm">
+                    <option value="blue">Thông báo</option>
+                    <option value="green">Khen thưởng</option>
+                    <option value="red">Vi phạm</option>
+                </select>
+                <input id="eventTitle" type="text" placeholder="Tiêu đề..." class="w-full border p-2 rounded-lg outline-none text-sm">
+                <textarea id="eventDesc" class="w-full border p-2 rounded-lg h-20 outline-none text-sm" placeholder="Mô tả nhanh..."></textarea>
+                <div class="flex gap-2">
+                    <button onclick="toggleModal()" class="flex-1 py-2 text-gray-500 text-sm font-bold">Đóng</button>
+                    <button onclick="addEvent()" class="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold shadow-lg shadow-blue-200">Xác nhận</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Hiển thị ngày hiện tại
+        let selectedEventId = null;
+        let eventCount = 1;
+
         document.getElementById('current-date').innerText = new Date().toLocaleDateString('vi-VN');
 
         function toggleModal() {
             document.getElementById('eventModal').classList.toggle('active');
+            document.getElementById('quickMenu').classList.remove('active');
         }
 
-        let eventCount = 1;
+        // Hiện Menu khi click vào nút tròn
+        function showQuickMenu(e, id) {
+            e.stopPropagation();
+            selectedEventId = id;
+            const menu = document.getElementById('quickMenu');
+            menu.classList.add('active');
+            menu.style.top = `${e.clientY - 80}px`;
+            menu.style.left = `${e.clientX - 10}px`;
+        }
+
+        // Đóng menu khi click ra ngoài
+        window.onclick = function() {
+            document.getElementById('quickMenu').classList.remove('active');
+        }
+
+        function openModalFromMenu() {
+            toggleModal();
+        }
+
+        function deleteEvent() {
+            if (selectedEventId && selectedEventId !== 'event-0') {
+                document.getElementById(selectedEventId).remove();
+                selectedEventId = null;
+            } else {
+                alert("Không thể xóa điểm gốc!");
+            }
+        }
+
         function addEvent() {
             const title = document.getElementById('eventTitle').value;
             const desc = document.getElementById('eventDesc').value;
-            const color = document.getElementById('eventType').value;
+            const colorMap = { blue: 'blue-500', green: 'emerald-500', red: 'red-500' };
+            const color = colorMap[document.getElementById('eventType').value];
+            
+            if (!title) return alert("Nhập tiêu đề!");
+
             const timeline = document.getElementById('timeline-content');
+            
+            // Tính toán vị trí: Nếu có điểm đang chọn thì thêm cạnh nó, nếu không thì thêm ở cuối
+            let leftPos;
+            if (selectedEventId) {
+                const prevNode = document.getElementById(selectedEventId);
+                leftPos = parseInt(prevNode.style.left) + 200;
+            } else {
+                leftPos = 200 + (eventCount * 250);
+            }
 
-            if (!title) return alert("Vui lòng nhập tiêu đề!");
-
-            // Tính toán vị trí ngẫu nhiên trên trục để minh họa
-            const leftPos = 200 + (eventCount * 250);
             const isTop = eventCount % 2 === 0;
-            const positionClass = isTop ? "top-[40%]" : "bottom-[40%]";
-            const flexClass = isTop ? "flex-col" : "flex-col-reverse";
-            const marginClass = isTop ? "mb-2" : "mt-2";
-
+            const id = `event-${Date.now()}`;
+            
             const eventHtml = `
-                <div class="absolute left-[${leftPos}px] ${positionClass} flex ${flexClass} items-center scale-0 transition-all duration-500 shadow-lg" id="event-${eventCount}">
-                    <div class="bg-${color}-500 w-4 h-4 rounded-full border-4 border-white shadow z-10"></div>
-                    <div class="bg-white p-3 rounded-xl shadow-md border border-${color}-100 w-52 ${marginClass}">
-                        <p class="text-[10px] font-bold text-${color}-500 uppercase">Sự kiện mới</p>
+                <div class="event-wrapper absolute top-[40%] flex flex-col items-center transition-all duration-500 scale-0" 
+                     id="${id}" style="left: ${leftPos}px; ${!isTop ? 'flex-direction: column-reverse; top: auto; bottom: 40%;' : ''}">
+                    <button onclick="showQuickMenu(event, '${id}')" class="node-btn bg-${color} w-5 h-5 rounded-full border-4 border-white shadow-lg hover:scale-125 transition-transform z-20"></button>
+                    <div class="event-card bg-white p-3 rounded-xl shadow-md border border-gray-100 w-48 ${isTop ? 'mt-4' : 'mb-4'}">
+                        <p class="text-[10px] font-bold text-gray-400">${new Date().toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})}</p>
                         <p class="text-sm font-bold text-gray-800">${title}</p>
-                        <p class="text-[11px] text-gray-500 mt-1">${desc}</p>
+                        <p class="text-[11px] text-gray-500 line-clamp-2">${desc}</p>
                     </div>
                 </div>
             `;
 
             timeline.insertAdjacentHTML('beforeend', eventHtml);
             
-            // Hiệu ứng hiện ra
             setTimeout(() => {
-                document.getElementById(`event-${eventCount}`).classList.remove('scale-0');
+                document.getElementById(id).classList.remove('scale-0');
                 eventCount++;
             }, 100);
 
-            // Reset và đóng modal
+            // Reset
             document.getElementById('eventTitle').value = '';
             document.getElementById('eventDesc').value = '';
             toggleModal();
-
-            // Cuộn trục thời gian đến sự kiện mới
-            document.getElementById('timeline-scroll').scrollLeft = leftPos - 500;
+            
+            // Cuộn tới điểm mới
+            document.getElementById('timeline-scroll').scrollTo({ left: leftPos - 400, behavior: 'smooth' });
         }
     </script>
 </body>
